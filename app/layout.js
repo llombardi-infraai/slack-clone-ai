@@ -1,3 +1,5 @@
+import './globals.css'
+
 export const metadata = {
   title: 'Slack Clone',
   description: 'Simple Slack clone with AI',
