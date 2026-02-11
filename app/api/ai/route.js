@@ -12,10 +12,13 @@ async function generateAIResponse(messages) {
     return "I'm not configured yet. Add ANTHROPIC_API_KEY to environment variables."
   }
   
-  const conversation = messages.map(m => ({
-    role: m.isAi ? 'assistant' : 'user',
-    content: `${m.username}: ${m.text}`
-  }))
+  // Only send user messages to AI, format properly
+  const userMessages = messages.filter(m => !m.isAi)
+  if (userMessages.length === 0) {
+    return "Hello! I'm your AI assistant. How can I help you today?"
+  }
+  
+  const lastMessage = userMessages[userMessages.length - 1]
   
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -28,11 +31,13 @@ async function generateAIResponse(messages) {
       body: JSON.stringify({
         model: 'claude-3-5-sonnet-20241022',
         max_tokens: 500,
-        messages: conversation.slice(-10), // Last 10 messages for context
+        messages: [{ role: 'user', content: lastMessage.text }],
       }),
     })
     
     if (!response.ok) {
+      const errorData = await response.text()
+      console.error('Anthropic API error:', response.status, errorData)
       throw new Error(`API error: ${response.status}`)
     }
     
@@ -40,7 +45,7 @@ async function generateAIResponse(messages) {
     return data.content[0]?.text || "I'm thinking..."
   } catch (error) {
     console.error('AI error:', error)
-    return "Sorry, I'm having trouble thinking right now. Try again in a moment."
+    return `Error: ${error.message}`
   }
 }
 
