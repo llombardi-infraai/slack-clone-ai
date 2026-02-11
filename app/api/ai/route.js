@@ -9,10 +9,9 @@ async function generateAIResponse(messages) {
   const apiKey = process.env.ANTHROPIC_API_KEY
   
   if (!apiKey) {
-    return "I'm not configured yet. Add ANTHROPIC_API_KEY to environment variables."
+    return "Error: ANTHROPIC_API_KEY not set"
   }
   
-  // Only send user messages to AI, format properly
   const userMessages = messages.filter(m => !m.isAi)
   if (userMessages.length === 0) {
     return "Hello! I'm your AI assistant. How can I help you today?"
@@ -21,6 +20,8 @@ async function generateAIResponse(messages) {
   const lastMessage = userMessages[userMessages.length - 1]
   
   try {
+    console.log('Calling Anthropic API with key:', apiKey.substring(0, 10) + '...')
+    
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -29,20 +30,23 @@ async function generateAIResponse(messages) {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-opus-20240229',
+        model: 'claude-3-haiku-20240307',
         max_tokens: 500,
         messages: [{ role: 'user', content: lastMessage.text }],
       }),
     })
     
+    console.log('Response status:', response.status)
+    
     if (!response.ok) {
-      const errorData = await response.text()
-      console.error('Anthropic API error:', response.status, errorData)
-      throw new Error(`API error: ${response.status}`)
+      const errorText = await response.text()
+      console.error('API error response:', errorText)
+      return `API Error ${response.status}: ${errorText.substring(0, 100)}`
     }
     
     const data = await response.json()
-    return data.content[0]?.text || "I'm thinking..."
+    console.log('API response:', JSON.stringify(data).substring(0, 200))
+    return data.content?.[0]?.text || "No response from AI"
   } catch (error) {
     console.error('AI error:', error)
     return `Error: ${error.message}`
