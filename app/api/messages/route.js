@@ -1,4 +1,4 @@
-import store from '../../lib/store'
+import store from '../../../lib/store'
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url)
